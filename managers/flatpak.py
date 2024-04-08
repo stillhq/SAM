@@ -1,48 +1,43 @@
-from typing import List
-from . import Manager
+from typing import List, Dict
+from managers import Manager
+from actions import Action
 
-import actions
 import threading
 
 import gi.repository
 gi.require_version('Flatpak', '1.0')
-from gi.repository import Flatpak, Gio
-
-
-def package_from_ref(ref: Flatpak.Ref):
-    kind = ""
-    if ref.get_kind() == Flatpak.RefKind.APP:
-        kind = "app"
-    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
-        kind = "runtime"
-
-    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"
+from gi.repository import Flatpak, GLib, Gio
 
 
 class FlatpakManager(Manager):
     title: str
     manager_id: str
-    action = actions.Action
+    current_action = Action
     flatpak_operation: Flatpak.TransactionOperation = None
-    flatpak_progress: Flatpak.Progress = None
+    flatpak_progress: Flatpak.TransactionProgress = None
 
     @property
     def manager_type(self) -> str:  # Hardcoded property
         return "flatpak"
 
-    def update_progress(self):
-        if self.flatpak_progress is not None:
-            self.action.progress = self.flatpak_progress.get_progress()
+    def update_progress(self, progress):
+        self.current_action.progress = progress.get_progress()
+        print(self.current_action.progress)
 
     def new_operation(self, _transaction, operation, progress):
         self.flatpak_operation = operation
         self.flatpak_progress = progress
-        thread = threading.Thread(target=self.update_progress)
-        thread.daemon = True
-        thread.start()
+        self.flatpak_progress.connect("changed", self.update_progress)
+
+    # Used for error handling
+    def run_transaction(self, transaction):
+        try:
+            transaction.run(self.cancellable)
+        except GLib.GError as error:
+            self.current_action.error = error.message
 
     def on_error(self, _transaction, _operation, error, _error_details):
-        self.action.error = error.message
+        self.current_action.error = error.message
 
     def create_transaction(self):
         transaction = Flatpak.Transaction.new_for_installation(self.flatpak_installation, self.cancellable)
@@ -56,20 +51,20 @@ class FlatpakManager(Manager):
         self.flatpak_installation = Flatpak.Installation.new_system()
         self.cancellable = Gio.Cancellable()
 
-    def install(self, package: str):
-        self.transaction = self.create_transaction()
-        self.transaction.add_install(self.title, package, None)
-        self.transaction.run(self.cancellable)
+    def install(self, action: Action):
+        transaction = self.create_transaction()
+        transaction.add_install(self.manager_id, action.package_id, None)
+        self.run_transaction(transaction)
 
-    def remove(self, package: str):
-        self.transaction = self.create_transaction()
-        self.transaction.add_uninstall(package)
-        self.transaction.run(self.cancellable)
+    def remove(self, action: Action):
+        transaction = self.create_transaction()
+        transaction.add_uninstall(action.package_id)
+        self.run_transaction(transaction)
 
-    def update(self, package: str):
-        self.transaction = self.create_transaction()
-        self.transaction.add_update(package)
-        self.transaction.run(self.cancellable)
+    def update(self, action: Action):
+        transaction = self.create_transaction()
+        transaction.add_update(action.package_id)
+        self.run_transaction(transaction)
 
     def check_update(self, package: str) -> bool:
         # Parsing the package name to get the RefKind
@@ -90,3 +85,23 @@ class FlatpakManager(Manager):
     def check_installed(self) -> List[str]:
         refs = self.flatpak_installation.list_installed_refs()
         return [package_from_ref(ref) for ref in refs]
+
+
+def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
+    installation = Flatpak.Installation.new_system()
+    remotes = installation.list_remotes()
+    managers = {}
+    for remote in remotes:
+        title = remote.get_title() if remote.get_title() else remote.get_name()
+        managers[remote.get_name()] = FlatpakManager(title, remote.get_name())
+    return managers
+
+
+def package_from_ref(ref: Flatpak.Ref):
+    kind = ""
+    if ref.get_kind() == Flatpak.RefKind.APP:
+        kind = "app"
+    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
+        kind = "runtime"
+
+    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"

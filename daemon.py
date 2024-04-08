@@ -1,10 +1,10 @@
 from typing import List
 from actions import Action
+from managers.utils import run_action
 
 import dbus, dbus.service, dbus.mainloop.glib
 
-from gi.repository import GLib
-
+import threading
 
 class SamService(dbus.service.Object):
 
@@ -15,7 +15,10 @@ class SamService(dbus.service.Object):
         bus_name = dbus.service.BusName('io.stillhq.SamService', bus=dbus.SystemBus())
         dbus.service.Object.__init__(self, bus_name, '/io/stillhq/SamService')
 
-    @dbus.service.method('io.stillhq.SamService')
+        thread = threading.Thread(target=self.queue_manager)
+        thread.daemon = True
+        thread.start()
+
     def add_to_queue(self, action: Action):
         # Check if action from package is already in the queue
         for existing_action in self.queue:
@@ -23,6 +26,7 @@ class SamService(dbus.service.Object):
                 return
         self.queue.append(action)
 
+    @dbus.service.method('io.stillhq.SamService')
     def add_dict_to_queue(self, action_dict: dict):
         for action in self.queue:
             if action.package_id == action_dict["package_id"]:
@@ -36,19 +40,13 @@ class SamService(dbus.service.Object):
                 self.queue.remove(action)
 
     @dbus.service.method('io.stillhq.SamService')
-    def get_queue_packages(self) -> List[str]:
-        return [action.package_id for action in self.queue]
+    def get_queue_actions_dict(self) -> List[dict]:
+        return [action.to_dict() for action in self.queue]
 
     def queue_manager(self):
+        print("Started Queue Manager")
         while True:
             if len(self.queue) > 0:
-                pass
-
-
-if __name__ == '__main__':
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-    dbus_service = SamService()
-
-    loop = GLib.MainLoop()
-    loop.run()
+                action = self.queue[0]
+                run_action(action)
+                self.queue.pop(0)

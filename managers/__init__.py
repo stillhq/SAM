@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-import actions
+from actions import Action
 
 
 class Manager(ABC):
     title: str
     manager_id: str
-    action = actions.Action
+    current_action = Action
 
     def __init__(self, title: str, manager_id: str):
         self.title = title
@@ -19,15 +19,15 @@ class Manager(ABC):
         raise NotImplementedError("Not implemented for manager type")
 
     @abstractmethod
-    def install(self, package: str):
+    def install(self, action: Action):
         raise NotImplementedError("Not implemented for manager type")
 
     @abstractmethod
-    def remove(self, package: str):
+    def remove(self, action: Action):
         raise NotImplementedError("Not implemented for manager type")
 
     @abstractmethod
-    def update(self, package: str):
+    def update(self, action: Action):
         raise NotImplementedError("Not implemented for manager type")
 
     @abstractmethod

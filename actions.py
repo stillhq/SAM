@@ -8,9 +8,9 @@ class Task(Enum):
     UPDATE = 2
     UNKNOWN = 100
 
-    @staticmethod
-    def from_str(s: str):
-        return Task[s.upper()]
+    @classmethod
+    def from_str(cls, s: str):
+        return cls[s.upper()]
 
     def to_str(self) -> str:
         return self.name
@@ -34,15 +34,10 @@ class Action:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> Type['Action']:
-        action = Action()
-        action.package_id = data["package_id"]
-        action.manager_id = data["manager_id"]
-        action.task = data["task"]
-        action.progress = data["progress"]
-        action.error = data["error"]
-        return cls
+    def from_dict(cls, data: dict):
+        action = cls()
+        action.package_id = str(data["package_id"])
+        action.manager_id = str(data["manager_id"])
+        action.task = Task.from_str(str(data["task"]))
+        return action
 
-    def run_action(self):
-        pass
-        # TODO: Write this function after Managers are finished
