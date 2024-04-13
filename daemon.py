@@ -1,13 +1,13 @@
-from typing import List
+from typing import List, Tuple
 from actions import Action
-from managers.utils import run_action
+from managers.utils import run_action, get_managers_dict
 
 import dbus, dbus.service, dbus.mainloop.glib
 
 import threading
 
-class SamService(dbus.service.Object):
 
+class SamService(dbus.service.Object):
     queue: List[Action] = []
     available_updates: List[Action] = []
 
@@ -42,6 +42,22 @@ class SamService(dbus.service.Object):
     @dbus.service.method('io.stillhq.SamService')
     def get_queue_actions_dict(self) -> List[dict]:
         return [action.to_dict() for action in self.queue]
+
+    @dbus.service.method('io.stillhq.SamService')
+    def get_updates_available(self) -> List[Tuple[str, str]]:
+        updates = []
+        for source, manager in get_managers_dict():
+            for app in manager.get_available_updates():
+                updates.append((source, app))
+        return updates
+
+    @dbus.service.method('io.stillhq.SamService')
+    def get_installed(self) -> List[Tuple[str, str]]:
+        installed = []
+        for source, manager in get_managers_dict():
+            for app in manager.check_installed():
+                installed.append((source, app))
+        return installed
 
     def queue_manager(self):
         print("Started Queue Manager")
