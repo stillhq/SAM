@@ -1,6 +1,6 @@
 Name:           sam
 Version:        1.0
-Release:        3
+Release:        4
 Summary:        Daemon for managing packages
 
 License:        GPL v3
@@ -23,7 +23,7 @@ Daemon that runs in the background to manage package installation, updates, and 
 mkdir -p %{buildroot}%{python3_sitelib}/sam
 mkdir -p %{buildroot}%{_bindir}
 install -m 0755 *.py %{buildroot}%{python3_sitelib}/sam
-install -m 0755 __main__.py %{buildroot}%{_bindir}/sam
+install -m 0777 __main__.py %{buildroot}%{_bindir}/sam
 cp -a managers %{buildroot}%{python3_sitelib}/sam
 
 # SystemD
