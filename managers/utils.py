@@ -1,7 +1,7 @@
 from typing import Dict
 import sam.managers.flatpak as flatpak
 from sam.managers import Manager
-from actions import Action, Task
+from sam.actions import Action, Task
 
 
 def get_managers_dict() -> Dict[str, Manager]:

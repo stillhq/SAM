@@ -1,6 +1,6 @@
 from typing import List, Dict
 from sam.managers import Manager
-from actions import Action
+from sam.actions import Action
 
 import threading
 
