@@ -32,8 +32,8 @@ install -m 0755 systemd/sam.service %{buildroot}%{_unitdir}
 install -m 0755 systemd/95-sam.preset %{buildroot}%{_presetdir}
 install -m 0755 io.stillhq.sam.conf %{buildroot}%{_sysconfdir}/dbus-1/system.d
 
-mkdir -p %{buildroot}%{_datadir}/applications
-install -m 0755 io.stillhq.sam.desktop %{buildroot}%{_datadir}/applications
+#mkdir -p %{buildroot}%{_datadir}/applications
+#install -m 0755 io.stillhq.sam.desktop %{buildroot}%{_datadir}/applications
 
 %post
 %systemd_user_post sam.service
