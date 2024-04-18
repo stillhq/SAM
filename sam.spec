@@ -42,8 +42,10 @@ install -m 0755 io.stillhq.sam.conf %{buildroot}%{_sysconfdir}/dbus-1/system.d
 %systemd_user_preun sam.service
 
 %files
-%{python3_sitelib}/sam/*.py*
-%{python3_sitelib}/sam/managers/*.py*
+%{python3_sitelib}/sam/*.py
+%{python3_sitelib}/sam/managers/*.py
+%{python3_sitelib}/sam/__pycache__/*pyc
+%{python3_sitelib}/sam/managers/__pycache__/*pyc
 %{_unitdir}/sam.service
 %{_presetdir}/95-sam.preset
 %{_sysconfdir}/dbus-1/system.d/io.stillhq.sam.conf
