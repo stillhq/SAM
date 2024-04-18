@@ -1,6 +1,6 @@
 from typing import List, Tuple
-from actions import Action
-from managers.utils import run_action, get_managers_dict
+from sam.actions import Action
+from sam.managers.utils import run_action, get_managers_dict
 
 import dbus, dbus.service, dbus.mainloop.glib
 

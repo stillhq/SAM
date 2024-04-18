@@ -1,5 +1,5 @@
 from typing import List, Dict
-from managers import Manager
+from sam.managers import Manager
 from actions import Action
 
 import threading

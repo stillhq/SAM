@@ -1,6 +1,6 @@
 from typing import Dict
-import managers.flatpak as flatpak
-from managers import Manager
+import sam.managers.flatpak as flatpak
+from sam.managers import Manager
 from actions import Action, Task
 
 

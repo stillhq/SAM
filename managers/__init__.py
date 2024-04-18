@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from actions import Action
+from sam.actions import Action
 
 
 class Manager(ABC):
