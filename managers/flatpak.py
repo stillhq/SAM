@@ -6,6 +6,7 @@ import threading
 
 import gi.repository
 gi.require_version('Flatpak', '1.0')
+gi.require_version('AppStreamGlib', '1.0')
 from gi.repository import AppStreamGlib, Flatpak, GLib, Gio
 
 

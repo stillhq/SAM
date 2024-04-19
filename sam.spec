@@ -1,6 +1,6 @@
 Name:           sam
 Version:        1.1
-Release:        3
+Release:        4
 Summary:        Daemon for managing packages
 
 License:        GPL v3
@@ -8,9 +8,11 @@ URL:            https://github.com/stillhq/SAM
 Source0:        https://github.com/stillhq/SAM/archive/refs/heads/main.tar.gz
 
 BuildArch:      noarch
+Requires:       python3-pydbus
+Requires:       python3-gobject
+Requires:       python3
+Requires:       libappstream-glib
 BuildRequires:  python3-devel
-BuildRequires:  python3-gobject
-BuildRequires:  python3-pydbus
 BuildRequires:  systemd-rpm-macros
 
 %description
