@@ -59,6 +59,10 @@ class SamService(dbus.service.Object):
                 installed.append((source, app))
         return installed
 
+    @dbus.service.method('io.stillhq.SamService')
+    def bare_app_info(self, source: str, package: str) -> dict:
+        return get_managers_dict()[source].bare_app_info(package)
+
     def queue_manager(self):
         print("Started Queue Manager")
         while True:

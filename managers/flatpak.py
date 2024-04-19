@@ -6,7 +6,7 @@ import threading
 
 import gi.repository
 gi.require_version('Flatpak', '1.0')
-from gi.repository import Flatpak, GLib, Gio
+from gi.repository import AppstreamGlib, Flatpak, GLib, Gio
 
 
 class FlatpakManager(Manager):
@@ -76,7 +76,7 @@ class FlatpakManager(Manager):
         arch = ref[2]
         branch = ref[3]
         installed_ref = self.flatpak_installation.get_installed_ref(ref_kind, ref[1], arch, branch, self.cancellable)
-        return installed_ref.get_is_current()
+        return not installed_ref.get_is_current()
 
     def check_updates(self) -> List[str]:
         refs = self.flatpak_installation.list_installed_refs_for_update()
@@ -85,6 +85,37 @@ class FlatpakManager(Manager):
     def check_installed(self) -> List[str]:
         refs = self.flatpak_installation.list_installed_refs()
         return [package_from_ref(ref) for ref in refs]
+
+    def bare_info_app(self, package: str) -> dict:
+        ref = package.split("/")
+        store = AppstreamGlib.Store()
+        store.from_xml(
+            self.flatpak_installation.get_remote_by_name(
+                self.manager_id
+            ).get_appstream_dir().get_path() + "/appstream.xml"
+        )
+        App = store.get_app_by_id(ref[1])
+
+        icon = App.get_icon_for_size(128, 128)
+        if icon.get_kind == AppstreamGlib.IconKind.LOCAL:
+            icon_url = icon.get_path()
+        elif icon.get_kind == AppstreamGlib.IconKind.REMOTE:
+            icon_url = icon.get_url()
+        else:
+            icon_url = None
+
+        return {
+            "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
+            "name": App.get_name(None),
+            "primary_src": self.manager_id,
+            "src_package_name": package,
+            "icon_url": icon_url,
+            "summary": App.get_comment(None),
+            "description": App.get_description(None),
+            "categories": App.get_categories()
+        }
+
+
 
 
 def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
