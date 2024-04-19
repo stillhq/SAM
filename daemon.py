@@ -46,7 +46,7 @@ class SamService(dbus.service.Object):
     @dbus.service.method('io.stillhq.SamService')
     def get_updates_available(self) -> List[Tuple[str, str]]:
         updates = []
-        for source, manager in get_managers_dict():
+        for source, manager in get_managers_dict().items():
             for app in manager.get_available_updates():
                 updates.append((source, app))
         return updates
@@ -54,7 +54,7 @@ class SamService(dbus.service.Object):
     @dbus.service.method('io.stillhq.SamService')
     def get_installed(self) -> List[Tuple[str, str]]:
         installed = []
-        for source, manager in get_managers_dict():
+        for source, manager in get_managers_dict().items():
             for app in manager.check_installed():
                 installed.append((source, app))
         return installed
@@ -64,7 +64,7 @@ class SamService(dbus.service.Object):
         return get_managers_dict()[source].bare_app_info(package)
 
     def queue_manager(self):
-        print("Started Queue Manager")
+        print("Started Queue Manager")get_installed_apps
         while True:
             if len(self.queue) > 0:
                 action = self.queue[0]
