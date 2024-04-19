@@ -64,7 +64,7 @@ class SamService(dbus.service.Object):
         return get_managers_dict()[source].bare_app_info(package)
 
     def queue_manager(self):
-        print("Started Queue Manager")get_installed_apps
+        print("Started Queue Manager")
         while True:
             if len(self.queue) > 0:
                 action = self.queue[0]
