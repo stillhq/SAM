@@ -1,6 +1,6 @@
 Name:           sam
 Version:        1.1
-Release:        2
+Release:        3
 Summary:        Daemon for managing packages
 
 License:        GPL v3
@@ -54,5 +54,8 @@ install -m 0755 io.stillhq.sam.conf %{buildroot}%{_sysconfdir}/dbus-1/system.d
 %{_sysconfdir}/dbus-1/system.d/io.stillhq.sam.conf
 
 %changelog
+* Thu Apr 19 2024 Cameron Knauff
+- 1.1: Added bare_info_app funtion to managers
+
 * Thu Apr 18 2024 Cameron Knauff
 - Initial build
