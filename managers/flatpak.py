@@ -96,7 +96,7 @@ class FlatpakManager(Manager):
         if not os.path.exists(xml):
             xml = self.flatpak_installation.get_remote_by_name(
                 self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
-        store.from_file(xml)
+        store.from_file(Gio.File.new_for_path(xml))
         app = store.get_app_by_id(ref[1])
 
         icon = app.get_icon_for_size(128, 128)
