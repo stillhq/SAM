@@ -87,9 +87,9 @@ class FlatpakManager(Manager):
         refs = self.flatpak_installation.list_installed_refs()
         return [package_from_ref(ref) for ref in refs]
 
-    def bare_info_app(self, package: str) -> dict:
+    def bare_app_info(self, package: str) -> dict:
         ref = package.split("/")
-        store = AppstreamGlib.Store()
+        store = AppStreamGlib.Store()
         store.from_xml(
             self.flatpak_installation.get_remote_by_name(
                 self.manager_id
@@ -98,9 +98,9 @@ class FlatpakManager(Manager):
         App = store.get_app_by_id(ref[1])
 
         icon = App.get_icon_for_size(128, 128)
-        if icon.get_kind == AppstreamGlib.IconKind.LOCAL:
+        if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
             icon_url = icon.get_path()
-        elif icon.get_kind == AppstreamGlib.IconKind.REMOTE:
+        elif icon.get_kind == AppStreamGlib.IconKind.REMOTE:
             icon_url = icon.get_url()
         else:
             icon_url = None
