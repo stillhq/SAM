@@ -97,9 +97,9 @@ class FlatpakManager(Manager):
             xml = self.flatpak_installation.get_remote_by_name(
                 self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
         store.from_file(xml)
-        App = store.get_app_by_id(ref[1])
+        app = store.get_app_by_id(ref[1])
 
-        icon = App.get_icon_for_size(128, 128)
+        icon = app.get_icon_for_size(128, 128)
         if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
             icon_url = icon.get_path()
         elif icon.get_kind == AppStreamGlib.IconKind.REMOTE:
@@ -109,13 +109,13 @@ class FlatpakManager(Manager):
 
         return {
             "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
-            "name": App.get_name(None),
+            "name": app.get_name(None),
             "primary_src": self.manager_id,
             "src_package_name": package,
             "icon_url": icon_url,
-            "summary": App.get_comment(None),
-            "description": App.get_description(None),
-            "categories": App.get_categories()
+            "summary": app.get_comment(None),
+            "description": app.get_description(None),
+            "categories": app.get_categories()
         }
 
 
