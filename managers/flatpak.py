@@ -1,3 +1,4 @@
+import os.path
 from typing import List, Dict
 from sam.managers import Manager
 from sam.actions import Action
@@ -90,11 +91,12 @@ class FlatpakManager(Manager):
     def bare_app_info(self, package: str) -> dict:
         ref = package.split("/")
         store = AppStreamGlib.Store()
-        store.from_file(
-            self.flatpak_installation.get_remote_by_name(
-                self.manager_id
-            ).get_appstream_dir().get_path() + "/appstream.xml"
-        )
+        xml = self.flatpak_installation.get_remote_by_name(
+            self.manager_id).get_appstream_dir().get_path() + "/appstream.xml"
+        if not os.path.exists(xml):
+            xml = self.flatpak_installation.get_remote_by_name(
+                self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
+        store.from_file(xml)
         App = store.get_app_by_id(ref[1])
 
         icon = App.get_icon_for_size(128, 128)
