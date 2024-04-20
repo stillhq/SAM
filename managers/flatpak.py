@@ -90,7 +90,7 @@ class FlatpakManager(Manager):
     def bare_app_info(self, package: str) -> dict:
         ref = package.split("/")
         store = AppStreamGlib.Store()
-        store.from_xml(
+        store.from_file(
             self.flatpak_installation.get_remote_by_name(
                 self.manager_id
             ).get_appstream_dir().get_path() + "/appstream.xml"
