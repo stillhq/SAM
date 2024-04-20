@@ -97,7 +97,18 @@ class FlatpakManager(Manager):
             xml = self.flatpak_installation.get_remote_by_name(
                 self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
         store.from_file(Gio.File.new_for_path(xml))
+
         app = store.get_app_by_id(ref[1])
+        if app is None:
+            return {
+                "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
+                "name": ref[1],
+                "primary_src": self.manager_id,
+                "src_package_name": package,
+                "summary": "Unknown app",
+                "description": "Unknown app",
+                "categories": []
+            }
 
         icon = app.get_icon_for_size(128, 128)
         if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
