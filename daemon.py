@@ -47,7 +47,7 @@ class SamService(dbus.service.Object):
     def get_updates_available(self) -> List[Tuple[str, str]]:
         updates = []
         for source, manager in get_managers_dict().items():
-            for app in manager.get_available_updates():
+            for app in manager.check_updates():
                 updates.append((source, app))
         return updates
 
