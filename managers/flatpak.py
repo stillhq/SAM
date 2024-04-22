@@ -11,6 +11,25 @@ gi.require_version('AppStreamGlib', '1.0')
 from gi.repository import AppStreamGlib, Flatpak, GLib, Gio
 
 
+def package_from_ref(ref: Flatpak.Ref):
+    kind = ""
+    if ref.get_kind() == Flatpak.RefKind.APP:
+        kind = "app"
+    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
+        kind = "runtime"
+
+    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"
+
+
+def ref_from_package(package: str):
+    ref_parts = package.split("/")
+    kind = Flatpak.RefKind.APP if ref_parts[0] == "app" else Flatpak.RefKind.RUNTIME
+    name = ref_parts[1]
+    arch = ref_parts[2]
+    branch = ref_parts[3]
+    return kind, name, arch, branch
+
+
 class FlatpakManager(Manager):
     title: str
     manager_id: str
@@ -90,33 +109,43 @@ class FlatpakManager(Manager):
 
     def bare_app_info(self, package: str) -> dict:
         ref = package.split("/")
-        store = AppStreamGlib.Store()
-        xml = self.flatpak_installation.get_remote_by_name(
-            self.manager_id).get_appstream_dir().get_path() + "/appstream.xml"
-        if not os.path.exists(xml):
-            xml = self.flatpak_installation.get_remote_by_name(
-                self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
-        store.from_file(Gio.File.new_for_path(xml))
-
-        app = store.get_app_by_id(ref[1])
+    #     store = AppStreamGlib.Store()
+    #     xml = self.flatpak_installation.get_remote_by_name(
+    #         self.manager_id).get_appstream_dir().get_path() + "/appstream.xml"
+    #     if not os.path.exists(xml):
+    #         xml = self.flatpak_installation.get_remote_by_name(
+    #             self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
+    #     store.from_file(Gio.File.new_for_path(xml))
+    #
+    #     app = store.get_app_by_id(ref[1])
+        kind, name, arch, branch = ref_from_package(package)
+        installed_ref = self.flatpak_installation.get_installed_ref(kind, name, arch, branch, self.cancellable)
+        app = AppStreamGlib.App()
+        file = Gio.File.new_tmp_async()
+        file.load_bytes(installed_ref.load_appdata(self.cancellable).get_data())
+        print(installed_ref.load_appdata(self.cancellable).get_data())
+        app.parse_file(file, AppStreamGlib.AppParseFlags.NONE)
         if app is None:
             return {
-                "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
+                "app_id": f"{self.manager_id}-{ref[1].replace(".", "-").lower()}",
                 "name": ref[1],
                 "primary_src": self.manager_id,
                 "src_package_name": package,
                 "summary": "Unknown app",
-                "description": "Unknown app",
-                "categories": []
+                "description": "Unknown app"
             }
 
         icon = app.get_icon_for_size(128, 128)
-        if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
-            icon_url = icon.get_path()
-        elif icon.get_kind == AppStreamGlib.IconKind.REMOTE:
-            icon_url = icon.get_url()
+        if icon is not None:
+            if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
+                icon_url = icon.get_path()
+            elif icon.get_kind == AppStreamGlib.IconKind.REMOTE:
+                icon_url = icon.get_url()
+            else:
+                icon_url = ""
         else:
-            icon_url = None
+            icon_url = ""
+
 
         return {
             "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
@@ -140,13 +169,3 @@ def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
         title = remote.get_title() if remote.get_title() else remote.get_name()
         managers[remote.get_name()] = FlatpakManager(title, remote.get_name())
     return managers
-
-
-def package_from_ref(ref: Flatpak.Ref):
-    kind = ""
-    if ref.get_kind() == Flatpak.RefKind.APP:
-        kind = "app"
-    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
-        kind = "runtime"
-
-    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"

@@ -54,13 +54,16 @@ class SamService(dbus.service.Object):
     @dbus.service.method('io.stillhq.SamService')
     def get_installed(self) -> List[Tuple[str, str]]:
         installed = []
+        print(get_managers_dict().items())
         for source, manager in get_managers_dict().items():
+            print(source, manager, manager.check_installed())
             for app in manager.check_installed():
                 installed.append((source, app))
         return installed
 
     @dbus.service.method('io.stillhq.SamService')
     def bare_app_info(self, source: str, package: str) -> dict:
+        print("hell")
         return get_managers_dict()[source].bare_app_info(package)
 
     def queue_manager(self):
