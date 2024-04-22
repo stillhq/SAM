@@ -1,6 +1,6 @@
 Name:           sam
 Version:        1.1
-Release:        8
+Release:        9
 Summary:        Daemon for managing packages
 
 License:        GPL v3
