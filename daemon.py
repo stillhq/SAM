@@ -49,14 +49,19 @@ class SamService(dbus.service.Object):
         for source, manager in get_managers_dict().items():
             for app in manager.check_updates():
                 updates.append((source, app))
+        if len(updates) is None:
+            return None
         return updates
 
     @dbus.service.method('io.stillhq.SamService')
     def get_installed(self) -> List[Tuple[str, str]]:
         installed = []
         for source, manager in get_managers_dict().items():
+            print(source, manager, manager.check_installed())
             for app in manager.check_installed():
                 installed.append((source, app))
+        if len(installed) is None:
+            return None
         return installed
 
     @dbus.service.method('io.stillhq.SamService')

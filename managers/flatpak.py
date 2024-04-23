@@ -1,5 +1,9 @@
+import gzip
 import os.path
-from typing import List, Dict
+import tempfile
+from typing import List, Dict, Optional
+from xml.etree import ElementTree as etree
+
 from sam.managers import Manager
 from sam.actions import Action
 
@@ -7,8 +11,28 @@ import threading
 
 import gi.repository
 gi.require_version('Flatpak', '1.0')
+gi.require_version('AppStream', '1.0')
 gi.require_version('AppStreamGlib', '1.0')
-from gi.repository import AppStreamGlib, Flatpak, GLib, Gio
+from gi.repository import AppStream, AppStreamGlib, Flatpak, GLib, Gio
+
+
+def package_from_ref(ref: Flatpak.Ref):
+    kind = ""
+    if ref.get_kind() == Flatpak.RefKind.APP:
+        kind = "app"
+    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
+        kind = "runtime"
+
+    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"
+
+
+def ref_from_package(package: str):
+    ref_parts = package.split("/")
+    kind = Flatpak.RefKind.APP if ref_parts[0] == "app" else Flatpak.RefKind.RUNTIME
+    name = ref_parts[1]
+    arch = ref_parts[2]
+    branch = ref_parts[3]
+    return kind, name, arch, branch
 
 
 class FlatpakManager(Manager):
@@ -80,56 +104,86 @@ class FlatpakManager(Manager):
         installed_ref = self.flatpak_installation.get_installed_ref(ref_kind, ref[1], arch, branch, self.cancellable)
         return not installed_ref.get_is_current()
 
-    def check_updates(self) -> List[str]:
-        refs = self.flatpak_installation.list_installed_refs_for_update()
-        return [package_from_ref(ref) for ref in refs]
-
-    def check_installed(self) -> List[str]:
-        refs = self.flatpak_installation.list_installed_refs()
-        return [package_from_ref(ref) for ref in refs]
-
-    def bare_app_info(self, package: str) -> dict:
+    def bare_app_info(self, package: str) -> Optional[dict]:
         ref = package.split("/")
-        store = AppStreamGlib.Store()
-        xml = self.flatpak_installation.get_remote_by_name(
-            self.manager_id).get_appstream_dir().get_path() + "/appstream.xml"
-        if not os.path.exists(xml):
-            xml = self.flatpak_installation.get_remote_by_name(
-                self.manager_id).get_appstream_dir().get_path() + "/appstream.xml.gz"
-        store.from_file(Gio.File.new_for_path(xml))
+        kind, name, arch, branch = ref_from_package(package)
+        installed_ref = self.flatpak_installation.get_installed_ref(kind, name, arch, branch, self.cancellable)
 
-        app = store.get_app_by_id(ref[1])
+        print(installed_ref.get_origin())
+        if installed_ref.get_origin() != self.manager_id:
+            return None
+
+        appstream_gz = installed_ref.load_appdata(self.cancellable).get_data()
+
+        # Decompress appstream
+        metadata = AppStream.Metadata()
+        #print(get_component(gzip.decompress(appstream_gz)))
+        metadata.set_locale("en")
+        metadata.parse_bytes(GLib.Bytes(get_component(gzip.decompress(appstream_gz))), AppStream.FormatKind.XML)
+        app = metadata.get_component()
+        # app.parse_data(GLib.Bytes(gzip.decompress(appstream_gz)), AppStreamGlib.AppParseFlags.NONE)
+
         if app is None:
             return {
-                "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
+                "app_id": f"{self.manager_id}-{ref[1].replace(".", "-").lower()}",
                 "name": ref[1],
+                "author": "Unknown Author",
                 "primary_src": self.manager_id,
                 "src_package_name": package,
                 "summary": "Unknown app",
-                "description": "Unknown app",
-                "categories": []
+                "description": "Unknown app"
             }
 
-        icon = app.get_icon_for_size(128, 128)
-        if icon.get_kind == AppStreamGlib.IconKind.LOCAL:
-            icon_url = icon.get_path()
-        elif icon.get_kind == AppStreamGlib.IconKind.REMOTE:
-            icon_url = icon.get_url()
+        icon = app.get_icon_by_size(128, 128)
+        if icon is not None:
+            if icon.get_kind == AppStream.IconKind.LOCAL:
+                icon_url = icon.get_path()
+            elif icon.get_kind == AppStream.IconKind.REMOTE:
+                icon_url = icon.get_url()
+            else:
+                icon_url = ""
         else:
-            icon_url = None
+            icon_url = ""
+
 
         return {
             "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",
-            "name": app.get_name(None),
+            "name": str(app.get_name()),
+            "author": str(app.get_developer().get_name()),
             "primary_src": self.manager_id,
             "src_package_name": package,
             "icon_url": icon_url,
-            "summary": app.get_comment(None),
-            "description": app.get_description(None),
-            "categories": app.get_categories()
+            "summary": str(app.get_summary()),
+            "description": str(app.get_description()).replace("<p>", "").replace("</p>", ""),
+            "categories": str(",".join(app.get_categories()))
         }
 
+    def check_updates(self) -> List[str]:
+        refs = self.flatpak_installation.list_installed_refs_for_update()
+        return [package_from_ref(ref) for ref in refs if self.check_ref_source(ref)]
 
+    def check_installed(self) -> List[str]:
+        refs = self.flatpak_installation.list_installed_refs()
+        return [package_from_ref(ref) for ref in refs if self.check_ref_source(ref)]
+
+    def check_ref_source(self, ref) -> bool:
+        if ref.get_origin() != self.manager_id:
+            return False
+        return True
+
+
+def get_component(input_xml: bytes, language: str = "en") -> Optional[bytes]:
+    components = etree.fromstring(input_xml)
+    component = components.find("component")
+
+    lang_tag = "{http://www.w3.org/XML/1998/namespace}lang"
+
+    if component is not None:
+        for element in list(component):
+            if lang_tag in element.attrib and element.attrib[lang_tag] != language:
+                component.remove(element)
+        return etree.tostring(component, encoding='utf-8')
+    return None
 
 
 def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
@@ -140,13 +194,3 @@ def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
         title = remote.get_title() if remote.get_title() else remote.get_name()
         managers[remote.get_name()] = FlatpakManager(title, remote.get_name())
     return managers
-
-
-def package_from_ref(ref: Flatpak.Ref):
-    kind = ""
-    if ref.get_kind() == Flatpak.RefKind.APP:
-        kind = "app"
-    elif ref.get_kind() == Flatpak.RefKind.RUNTIME:
-        kind = "runtime"
-
-    return f"{kind}/{ref.get_name()}/{ref.get_arch()}/{ref.get_branch()}"
