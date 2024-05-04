@@ -16,6 +16,7 @@ gi.require_version('AppStreamGlib', '1.0')
 from gi.repository import AppStream, AppStreamGlib, Flatpak, GLib, Gio
 
 
+
 def package_from_ref(ref: Flatpak.Ref):
     kind = ""
     if ref.get_kind() == Flatpak.RefKind.APP:
@@ -41,10 +42,26 @@ class FlatpakManager(Manager):
     current_action = Action
     flatpak_operation: Flatpak.TransactionOperation = None
     flatpak_progress: Flatpak.TransactionProgress = None
+    appstream_pool: Optional[AppStream.Pool] = None
 
     @property
     def manager_type(self) -> str:  # Hardcoded property
         return "flatpak"
+
+    #  Load app stream data into memory to prevent stillCenter taking too long to launch
+    def load_app_stream(self):
+        if self.appstream_pool is None:
+            self.appstream_pool = AppStream.Pool()
+            #self.appstream_pool.set_load_std_data_locations(False)
+            self.appstream_pool.add_flags(AppStream.PoolFlags.LOAD_FLATPAK)
+            #remote = self.flatpak_installation.get_remote_by_name(self.manager_id)
+            #print(remote.get_appstream_dir(None).get_path())
+            #self.appstream_pool.add_extra_data_location(
+            #    remote.get_appstream_dir(None).get_path(),
+            #    AppStream.FormatStyle.CATALOG
+            #)
+            self.appstream_pool.load()
+            # print(self.appstream_pool.get_components().as_array())
 
     def update_progress(self, progress):
         self.current_action.progress = progress.get_progress()
@@ -109,19 +126,14 @@ class FlatpakManager(Manager):
         kind, name, arch, branch = ref_from_package(package)
         installed_ref = self.flatpak_installation.get_installed_ref(kind, name, arch, branch, self.cancellable)
 
-        print(installed_ref.get_origin())
         if installed_ref.get_origin() != self.manager_id:
             return None
 
-        appstream_gz = installed_ref.load_appdata(self.cancellable).get_data()
-
-        # Decompress appstream
-        metadata = AppStream.Metadata()
-        #print(get_component(gzip.decompress(appstream_gz)))
-        metadata.set_locale("en")
-        metadata.parse_bytes(GLib.Bytes(get_component(gzip.decompress(appstream_gz))), AppStream.FormatKind.XML)
-        app = metadata.get_component()
-        # app.parse_data(GLib.Bytes(gzip.decompress(appstream_gz)), AppStreamGlib.AppParseFlags.NONE)
+        self.load_app_stream()
+        components = self.appstream_pool.get_components_by_bundle_id(
+            AppStream.BundleKind.FLATPAK, package, True
+        )
+        app = components.as_array()[0]
 
         if app is None:
             return {
@@ -170,20 +182,6 @@ class FlatpakManager(Manager):
         if ref.get_origin() != self.manager_id:
             return False
         return True
-
-
-def get_component(input_xml: bytes, language: str = "en") -> Optional[bytes]:
-    components = etree.fromstring(input_xml)
-    component = components.find("component")
-
-    lang_tag = "{http://www.w3.org/XML/1998/namespace}lang"
-
-    if component is not None:
-        for element in list(component):
-            if lang_tag in element.attrib and element.attrib[lang_tag] != language:
-                component.remove(element)
-        return etree.tostring(component, encoding='utf-8')
-    return None
 
 
 def get_managers_for_remotes() -> Dict[str, FlatpakManager]:
