@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=stillOS App Manager
+Comment=Description of what Test Application does
+Exec=gnome-test-application
+Icon=system-software-install-symbolic
+Terminal=false
+Type=Application
+NoDisplay=true
+Categories=GNOME;GTK;
+StartupNotify=false
+DBusActivatable=true
+X-GNOME-UsesNotifications=true

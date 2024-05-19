@@ -10,6 +10,14 @@ import threading
 class SamService(dbus.service.Object):
     queue: List[Action] = []
     available_updates: List[Action] = []
+    notify_service = dbus.Interface(
+        dbus.SessionBus().get_object(
+            "org.freedesktop.Notifications", "/org/freedesktop/Notifications"
+        ), "org.freedesktop.Notifications"
+    )
+    notify_id = 0
+    queue_pos = 0
+    queue_length: int = 0
 
     def __init__(self):
         bus_name = dbus.service.BusName('io.stillhq.SamService', bus=dbus.SystemBus())
@@ -25,6 +33,7 @@ class SamService(dbus.service.Object):
             if existing_action.package_id == action.package_id:
                 return
         self.queue.append(action)
+        self.queue_length += 1
 
     @dbus.service.method('io.stillhq.SamService')
     def add_dict_to_queue(self, action_dict: dict):
@@ -75,5 +84,27 @@ class SamService(dbus.service.Object):
         while True:
             if len(self.queue) > 0:
                 action = self.queue[0]
+
+                urgency = 0
+                if not action.background:
+                    urgency = 1
+
+                self.queue_pos += 1
+
+                self.notify_id = self.notify_service.Notify(
+                    "still App Manager", self.notify_id, "system-software-install-symbolic",
+                    action.notification_message() + f" {self.queue_pos}/{self.queue_length}", [],
+                    {
+                        "urgency": urgency,
+                        "desktop-entry": "io.stillhq.SamService.desktop",
+                        "category": "transfer",
+                        "transient": False
+                    }, -1
+                )
                 run_action(action)
                 self.queue.pop(0)
+            else:
+                self.queue_pos = 0
+                self.queue_length = 0
+                self.notify_service.CloseNotification(self.notify_id)
+                self.notify_id = 0

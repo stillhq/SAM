@@ -1,6 +1,7 @@
 import gzip
 import os.path
 import tempfile
+import time
 from typing import List, Dict, Optional
 from xml.etree import ElementTree as etree
 
@@ -14,7 +15,6 @@ gi.require_version('Flatpak', '1.0')
 gi.require_version('AppStream', '1.0')
 gi.require_version('AppStreamGlib', '1.0')
 from gi.repository import AppStream, AppStreamGlib, Flatpak, GLib, Gio
-
 
 
 def package_from_ref(ref: Flatpak.Ref):
