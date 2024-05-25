@@ -43,9 +43,9 @@ class Action:
             "app_name": self.app_name,
             "manager_id": self.manager_id,
             "task": self.task.to_str(),
-            "progress": self.progress,
+            "progress": self.progress.to_str(),
             "error": self.error,
-            "background": self.background
+            "background": self.background.to_str()
         }
 
     @classmethod
