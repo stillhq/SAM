@@ -29,7 +29,6 @@ class SamService(dbus.service.Object):
     def progress_changed(self):
         pass
 
-
     def add_to_queue(self, action: Action):
         # Check if action from package is already in the queue
         for existing_action in self.queue:
@@ -55,6 +54,8 @@ class SamService(dbus.service.Object):
 
     @dbus.service.method('io.stillhq.SamService')
     def get_queue_actions_dict(self) -> List[dict]:
+        if len(self.queue) == 0:
+            return None
         return [action.to_dict() for action in self.queue]
 
     @dbus.service.method('io.stillhq.SamService')
