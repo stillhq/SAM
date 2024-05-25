@@ -45,7 +45,7 @@ class Action:
             "task": self.task.to_str(),
             "progress": str(self.progress),
             "error": self.error,
-            "background": self.background.to_str()
+            "background": str(self.background)
         }
 
     @classmethod
