@@ -43,7 +43,7 @@ class Action:
             "app_name": self.app_name,
             "manager_id": self.manager_id,
             "task": self.task.to_str(),
-            "progress": self.progress.to_str(),
+            "progress": str(self.progress),
             "error": self.error,
             "background": self.background.to_str()
         }
