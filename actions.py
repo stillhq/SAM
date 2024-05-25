@@ -22,7 +22,7 @@ class Action:
     manager_id: str
     running: bool = False
     task: Task
-    progress: int
+    progress: int = 0
     error: str = ""
     background: bool = False
 
@@ -56,6 +56,7 @@ class Action:
         action.manager_id = str(data["manager_id"])
         action.task = Task.from_str(str(data["task"]))
         action.background = bool(data.get("background", False))
+        action.progress = int(data.get("progress", "0"))
 
         return action
 
