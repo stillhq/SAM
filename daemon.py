@@ -87,5 +87,6 @@ class SamService(dbus.service.Object):
             if len(self.queue) > 0:
                 action = self.queue[0]
                 run_action(action)
+                print(action.error)
                 self.queue.pop(0)
                 self.queue_changed()
