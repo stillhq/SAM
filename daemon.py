@@ -3,7 +3,7 @@ import subprocess
 import pwd
 
 from typing import List, Tuple
-from sam.actions import Action
+from sam.actions import Action, Task
 from sam.managers.utils import run_action, get_managers_dict
 
 import dbus, dbus.service, dbus.mainloop.glib
@@ -26,7 +26,11 @@ class SamService(dbus.service.Object):
         pass
 
     @dbus.service.signal('io.stillhq.SamService')
-    def progress_changed(self):
+    def progress_changed(self, progress: int):
+        pass
+
+    @dbus.service.signal('io.stillhq.SamService')
+    def error_occurred(self, action):
         pass
 
     def add_to_queue(self, action: Action):
@@ -39,10 +43,14 @@ class SamService(dbus.service.Object):
 
     @dbus.service.method('io.stillhq.SamService', in_signature='a{sv}')
     def add_dict_to_queue(self, action_dict: dict):
-        for action in self.queue:
-            if action.package_id == action_dict["package_id"]:
-                return
-        self.queue.append(Action.from_dict(action_dict))
+        action = Action.from_dict(action_dict)
+        for queue_action in self.queue:
+            if queue_action.package_id == action.package_id:
+                if action.task == Task.REMOVE and not queue_action.running:
+                    self.queue.remove(queue_action)
+                else:
+                    return
+        self.queue.append(action)
         self.queue_changed()
 
     @dbus.service.method('io.stillhq.SamService')
@@ -86,7 +94,10 @@ class SamService(dbus.service.Object):
         while True:
             if len(self.queue) > 0:
                 action = self.queue[0]
+                action.progress_trigger = self.progress_changed
                 run_action(action)
-                print(action.error)
+                if action.error and action.error != "":
+                    print(action.error)
+                    self.error_occurred(action.to_dict())
                 self.queue.pop(0)
                 self.queue_changed()

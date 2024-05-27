@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Type
+from typing import Type, Callable
 
 
 class Task(Enum):
@@ -22,9 +22,20 @@ class Action:
     manager_id: str
     running: bool = False
     task: Task
-    progress: int = 0
+    _progress: int = 0
+    progress_trigger: Callable = None
     error: str = ""
     background: bool = False
+
+    @property
+    def progress(self) -> int:
+        return self._progress
+
+    @progress.setter
+    def progress(self, value: int):
+        self._progress = value
+        if self.progress_trigger is not None:
+            self.progress_trigger(value)
 
     def notification_message(self) -> str:
         match self.task:

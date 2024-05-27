@@ -65,7 +65,6 @@ class FlatpakManager(Manager):
 
     def update_progress(self, progress):
         self.current_action.progress = progress.get_progress()
-        print(self.current_action.progress)
 
     def new_operation(self, _transaction, operation, progress):
         self.flatpak_operation = operation
