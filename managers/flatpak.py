@@ -13,8 +13,7 @@ import threading
 import gi.repository
 gi.require_version('Flatpak', '1.0')
 gi.require_version('AppStream', '1.0')
-gi.require_version('AppStreamGlib', '1.0')
-from gi.repository import AppStream, AppStreamGlib, Flatpak, GLib, Gio
+from gi.repository import AppStream, Flatpak, GLib, Gio
 
 
 def package_from_ref(ref: Flatpak.Ref):
@@ -52,24 +51,16 @@ class FlatpakManager(Manager):
     def load_app_stream(self):
         if self.appstream_pool is None:
             self.appstream_pool = AppStream.Pool()
-            #self.appstream_pool.set_load_std_data_locations(False)
             self.appstream_pool.add_flags(AppStream.PoolFlags.LOAD_FLATPAK)
-            #remote = self.flatpak_installation.get_remote_by_name(self.manager_id)
-            #print(remote.get_appstream_dir(None).get_path())
-            #self.appstream_pool.add_extra_data_location(
-            #    remote.get_appstream_dir(None).get_path(),
-            #    AppStream.FormatStyle.CATALOG
-            #)
             self.appstream_pool.load()
-            # print(self.appstream_pool.get_components().as_array())
 
     def update_progress(self, progress):
         self.current_action.progress = progress.get_progress()
+        self.current_action.status = progress.get_status()
 
     def new_operation(self, _transaction, operation, progress):
         self.flatpak_operation = operation
-        self.flatpak_progress = progress
-        self.flatpak_progress.connect("changed", self.update_progress)
+        progress.connect("changed", self.update_progress)
 
     # Used for error handling
     def run_transaction(self, transaction):
@@ -155,7 +146,6 @@ class FlatpakManager(Manager):
                 icon_url = ""
         else:
             icon_url = ""
-
 
         return {
             "app_id": f"{self.manager_id}-{ref[1].replace(".", "-")}",

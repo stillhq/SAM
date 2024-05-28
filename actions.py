@@ -25,6 +25,7 @@ class Action:
     _progress: int = 0
     progress_trigger: Callable = None
     error: str = ""
+    status: str = ""
     background: bool = False
 
     @property
@@ -56,7 +57,8 @@ class Action:
             "task": self.task.to_str(),
             "progress": str(self.progress),
             "error": self.error,
-            "background": str(self.background)
+            "background": str(self.background),
+            "status": str(self.background)
         }
 
     @classmethod
