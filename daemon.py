@@ -25,7 +25,7 @@ class SamService(dbus.service.Object):
     def queue_changed(self):
         pass
 
-    @dbus.service.signal('io.stillhq.SamService')
+    @dbus.service.signal('io.stillhq.SamService', signature="i")
     def progress_changed(self, progress: int):
         pass
 

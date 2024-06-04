@@ -38,7 +38,7 @@ def ref_from_package(package: str):
 class FlatpakManager(Manager):
     title: str
     manager_id: str
-    current_action = Action
+    current_action: Action = None
     flatpak_operation: Flatpak.TransactionOperation = None
     flatpak_progress: Flatpak.TransactionProgress = None
     appstream_pool: Optional[AppStream.Pool] = None
@@ -85,16 +85,19 @@ class FlatpakManager(Manager):
         self.cancellable = Gio.Cancellable()
 
     def install(self, action: Action):
+        self.current_action = action
         transaction = self.create_transaction()
         transaction.add_install(self.manager_id, action.package_id, None)
         self.run_transaction(transaction)
 
     def remove(self, action: Action):
+        self.current_action = action
         transaction = self.create_transaction()
         transaction.add_uninstall(action.package_id)
         self.run_transaction(transaction)
 
     def update(self, action: Action):
+        self.current_action = action
         transaction = self.create_transaction()
         transaction.add_update(action.package_id)
         self.run_transaction(transaction)
