@@ -35,11 +35,11 @@ class SamService(dbus.service.Object):
 
     @dbus.service.signal('io.stillhq.SamService')
     def queue_changed(self):
-        pass
+        self.write_queue()
 
     @dbus.service.signal('io.stillhq.SamService')
     def progress_changed(self, progress: int):
-        pass
+        self.write_queue()
 
     @dbus.service.signal('io.stillhq.SamService')
     def error_occurred(self, action):
