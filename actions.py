@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Type, Callable
 
-
 class Task(Enum):
     INSTALL = 0
     REMOVE = 1

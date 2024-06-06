@@ -1,13 +1,25 @@
-import os
-import subprocess
-import pwd
-
+import asyncio
+import pickle
 from typing import List, Tuple
+import sam.quick
 from sam.actions import Action, Task
 from sam.managers.utils import run_action, get_managers_dict
 
 import dbus, dbus.service, dbus.mainloop.glib
 import threading
+
+try:
+    import sadb
+except ImportError:
+    sadb = None
+
+
+async def sadb_update_installed():
+    if sadb:
+        try:
+            sadb.update_installed()
+        except Exception as e:
+            pass # We don't care if this errors
 
 
 class SamService(dbus.service.Object):
@@ -66,28 +78,34 @@ class SamService(dbus.service.Object):
             return None
         return [action.to_dict() for action in self.queue]
 
-    @dbus.service.method('io.stillhq.SamService')
-    def get_updates_available(self) -> List[Tuple[str, str]]:
-        updates = []
-        for source, manager in get_managers_dict().items():
-            for app in manager.check_updates():
-                updates.append((source, app))
-        if len(updates) is None:
-            return None
-        return updates
+    # @dbus.service.method('io.stillhq.SamService')
+    # def get_updates_available(self) -> List[Tuple[str, str]]:
+    #     updates = []
+    #     for source, manager in get_managers_dict().items():
+    #         for app in manager.check_updates():
+    #             updates.append((source, app))
+    #     if len(updates) is None:
+    #         return None
+    #     return updates
 
-    @dbus.service.method('io.stillhq.SamService')
-    def get_installed(self) -> List[Tuple[str, str]]:
-        installed = []
-        print(get_managers_dict().items())
-        for source, manager in get_managers_dict().items():
-            print(source, manager, manager.check_installed())
-            for app in manager.check_installed():
-                installed.append((source, app))
-        if len(installed) == 0:
-            return None  # Prevent dbus signature error from empty list
-        return installed
+    # @dbus.service.method('io.stillhq.SamService')
+    # def get_installed(self) -> List[Tuple[str, str]]:
+    #     installed = []
+    #     print(get_managers_dict().items())
+    #     for source, manager in get_managers_dict().items():
+    #         print(source, manager, manager.check_installed())
+    #         for app in manager.check_installed():
+    #             installed.append((source, app))
+    #     if len(installed) == 0:
+    #         return None  # Prevent dbus signature error from empty list
+    #     return installed
 
+    def write_queue(self):
+        queue_dump = None
+        if len(self.queue) > 0:
+            queue_dump = [action.to_dict() for action in self.queue]
+        with open(sam.quick.QUEUE_LOCATION, "w") as file:
+            pickle.dump(queue_dump, file)
 
     def queue_manager(self):
         print("Started Queue Manager")
@@ -99,5 +117,6 @@ class SamService(dbus.service.Object):
                 if action.error and action.error != "":
                     print(action.error)
                     self.error_occurred(action.to_dict())
+                asyncio.run(sadb_update_installed())
                 self.queue.pop(0)
                 self.queue_changed()

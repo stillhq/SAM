@@ -11,7 +11,6 @@ if __name__ == '__main__':
         exit(3)
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
     dbus_service = sam.daemon.SamService()
 
     loop = GLib.MainLoop()
