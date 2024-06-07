@@ -33,13 +33,17 @@ class SamService(dbus.service.Object):
         thread.daemon = True
         thread.start()
 
+    def progress_trigger(self, progress: int):
+        self.write_queue()
+        self.progress_changed(progress)
+
     @dbus.service.signal('io.stillhq.SamService')
     def queue_changed(self):
-        self.write_queue()
+        pass
 
     @dbus.service.signal('io.stillhq.SamService')
     def progress_changed(self, progress: int):
-        self.write_queue()
+        pass
 
     @dbus.service.signal('io.stillhq.SamService')
     def error_occurred(self, action):
@@ -51,6 +55,7 @@ class SamService(dbus.service.Object):
             if existing_action.package_id == action.package_id:
                 return
         self.queue.append(action)
+        self.write_queue()
         self.queue_changed()
 
     @dbus.service.method('io.stillhq.SamService', in_signature='a{sv}')
@@ -63,6 +68,7 @@ class SamService(dbus.service.Object):
                 else:
                     return
         self.queue.append(action)
+        self.write_queue()
         self.queue_changed()
 
     @dbus.service.method('io.stillhq.SamService')
@@ -70,6 +76,7 @@ class SamService(dbus.service.Object):
         for action in self.queue:
             if action.package_id == package_name:
                 self.queue.remove(action)
+        self.write_queue()
         self.queue_changed()
 
     @dbus.service.method('io.stillhq.SamService')
@@ -112,7 +119,7 @@ class SamService(dbus.service.Object):
         while True:
             if len(self.queue) > 0:
                 action = self.queue[0]
-                action.progress_trigger = self.progress_changed
+                action.progress_trigger = self.progress_trigger
                 run_action(action)
                 if action.error and action.error != "":
                     print(action.error)
@@ -120,3 +127,4 @@ class SamService(dbus.service.Object):
                 asyncio.run(sadb_update_installed())
                 self.queue.pop(0)
                 self.queue_changed()
+                self.write_queue()
