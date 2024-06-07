@@ -104,7 +104,7 @@ class SamService(dbus.service.Object):
         queue_dump = None
         if len(self.queue) > 0:
             queue_dump = [action.to_dict() for action in self.queue]
-        with open(sam.quick.QUEUE_LOCATION, "w") as file:
+        with open(sam.quick.QUEUE_LOCATION, "wb") as file:
             pickle.dump(queue_dump, file)
 
     def queue_manager(self):
