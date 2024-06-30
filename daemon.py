@@ -14,7 +14,7 @@ except ImportError:
     sadb = None
 
 
-async def sadb_update_installed():
+def sadb_update_installed():
     if sadb:
         try:
             sadb.update_installed()
@@ -124,7 +124,8 @@ class SamService(dbus.service.Object):
                 if action.error and action.error != "":
                     print(action.error)
                     self.error_occurred(action.to_dict())
-                asyncio.run(sadb_update_installed())
+                sadb_update_installed()
                 self.queue.pop(0)
                 self.queue_changed()
                 self.write_queue()
+
