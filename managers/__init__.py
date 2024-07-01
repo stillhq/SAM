@@ -52,15 +52,14 @@ class StillRating(Enum):
 
     Attributes:
         UNKNOWN (int): Unknown still rating.
-        ONE (int): Still rating of 1.
-        TWO (int): Still rating of 2.
-        THREE (int): Still rating of 3.
-        FOUR (int): Still rating of 4.
-        FIVE (int): Still rating of 5.
-        FIVE_PLUS (int): Still rating of 5+.
+        WARNING (int): Still rating of 1.
+        BRONZE (int): Still rating of 2.
+        SILVER (int): Still rating of 3.
+        GOLD (int): Still rating of 4.
+        GOLD_PLUS (int): Still rating of 5.
     """
     UNKNOWN = 0
-    CAUTION = 1
+    WARNING = 1
     BRONZE = 2
     SILVER = 3
     GOLD = 4
