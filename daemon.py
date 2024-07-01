@@ -22,6 +22,15 @@ def sadb_update_installed():
             pass # We don't care if this errors
 
 
+def get_app_name_from_sadb(package_name, package_source):
+    if sadb:
+        app = sadb.get_installed_app(package_name, package_source)
+        if app.name:
+            return app.name
+
+    return package_name
+
+
 class SamService(dbus.service.Object):
     queue: List[Action] = []
     available_updates: List[Action] = []
@@ -71,6 +80,19 @@ class SamService(dbus.service.Object):
         self.write_queue()
         self.queue_changed()
 
+    @dbus.service.method('io.stillhq.SamService', in_signature='b')
+    def update_all(self, background):
+        managers = get_managers_dict()
+        for manager in get_managers_dict():
+            for package in manager.packages:
+                action = Action(package, Task.UPDATE)
+                action.package_id = str(package)
+                action.app_name = get_app_name_from_sadb(package, manager)
+                action.manager_id = manager
+                action.task = Task.UPDATE
+                action.background = background
+                add_to_queue(action)
+
     @dbus.service.method('io.stillhq.SamService')
     def remove_from_queue(self, package_name: str):
         for action in self.queue:
@@ -84,28 +106,6 @@ class SamService(dbus.service.Object):
         if len(self.queue) == 0:
             return None
         return [action.to_dict() for action in self.queue]
-
-    # @dbus.service.method('io.stillhq.SamService')
-    # def get_updates_available(self) -> List[Tuple[str, str]]:
-    #     updates = []
-    #     for source, manager in get_managers_dict().items():
-    #         for app in manager.check_updates():
-    #             updates.append((source, app))
-    #     if len(updates) is None:
-    #         return None
-    #     return updates
-
-    # @dbus.service.method('io.stillhq.SamService')
-    # def get_installed(self) -> List[Tuple[str, str]]:
-    #     installed = []
-    #     print(get_managers_dict().items())
-    #     for source, manager in get_managers_dict().items():
-    #         print(source, manager, manager.check_installed())
-    #         for app in manager.check_installed():
-    #             installed.append((source, app))
-    #     if len(installed) == 0:
-    #         return None  # Prevent dbus signature error from empty list
-    #     return installed
 
     def write_queue(self):
         queue_dump = None

@@ -68,7 +68,7 @@ class StillRating(Enum):
 
 
 # Used in some cases when sadb.App doesn't have data (sideloaded apps for example)
-class UnknownApp(Exception):
+class UnknownApp():
     app_id: str = "unknown"
     name: str
     primary_src: str
