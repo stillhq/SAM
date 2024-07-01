@@ -10,6 +10,7 @@ import threading
 
 try:
     import sadb
+    import sadb.database as db
 except ImportError:
     sadb = None
 
@@ -24,7 +25,11 @@ def sadb_update_installed():
 
 def get_app_name_from_sadb(package_name, package_source):
     if sadb:
-        app = sadb.get_installed_app(package_name, package_source)
+        database = db.get_readable_db()
+        app = database.get_installed_app(package_name, package_source)
+        if app == None:
+            print(f"Could not find {package_name}, {package_source} in sadb")
+            return package_name
         if app.name:
             return app.name
 
@@ -84,14 +89,14 @@ class SamService(dbus.service.Object):
     def update_all(self, background):
         managers = get_managers_dict()
         for manager in get_managers_dict():
-            for package in manager.packages:
-                action = Action(package, Task.UPDATE)
+            for package in managers[manager].check_updates():
+                action = Action()
                 action.package_id = str(package)
                 action.app_name = get_app_name_from_sadb(package, manager)
                 action.manager_id = manager
                 action.task = Task.UPDATE
                 action.background = background
-                add_to_queue(action)
+                self.add_to_queue(action)
 
     @dbus.service.method('io.stillhq.SamService')
     def remove_from_queue(self, package_name: str):
