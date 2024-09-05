@@ -5,7 +5,7 @@ It works by using a daemon running to manage apps through it and a library to ac
 
 The main project this is used in is stillCenter
 
-![image](https://github.com/user-attachments/assets/394f756f-5e6a-4c96-9d23-c280327b3ebd)
+[![image](https://github.com/user-attachments/assets/394f756f-5e6a-4c96-9d23-c280327b3ebd)](https://raw.githubusercontent.com/stillhq/stillCenterNew/main/images/homepage.png)
 
 # Installation
 You most likely do not need to install this, because it's made solely for stillOS, and preinstalled, but if you need to install this for some reason, you can build RPMs using the .spec file.
